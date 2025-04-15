@@ -1,25 +1,30 @@
+// src/pages/Signup.jsx
 import React, { useState } from 'react';
 import { Button, TextField, Container, Typography } from '@mui/material';
-import { useAuth } from '../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
+import { createUserWithEmailAndPassword } from 'firebase/auth';
+import { auth } from '../firebase';
 
 const Signup = () => {
-  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const { signup } = useAuth();
+  const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    signup(username.trim(), password);
+  const handleSignup = async () => {
+    try {
+      await createUserWithEmailAndPassword(auth, email, password);
+      navigate('/dashboard');
+    } catch (err) {
+      alert(err.message);
+    }
   };
 
   return (
-    <Container>
-      <Typography variant="h5">Sign Up</Typography>
-      <form onSubmit={handleSubmit}>
-        <TextField label="Username" fullWidth margin="normal" onChange={e => setUsername(e.target.value)} />
-        <TextField label="Password" type="password" fullWidth margin="normal" onChange={e => setPassword(e.target.value)} />
-        <Button type="submit" variant="contained" fullWidth>Sign Up</Button>
-      </form>
+    <Container maxWidth="sm" sx={{ mt: 10 }}>
+      <Typography variant="h4">Sign Up</Typography>
+      <TextField fullWidth label="Email" onChange={e => setEmail(e.target.value)} />
+      <TextField fullWidth label="Password" type="password" sx={{ mt: 2 }} onChange={e => setPassword(e.target.value)} />
+      <Button fullWidth variant="contained" sx={{ mt: 2 }} onClick={handleSignup}>Sign Up</Button>
     </Container>
   );
 };

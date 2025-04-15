@@ -1,52 +1,22 @@
 // src/context/AuthContext.jsx
-import React, { createContext, useContext, useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import bcrypt from 'bcryptjs';
+import { createContext, useContext, useEffect, useState } from 'react';
+import { auth } from '../firebase';
+import { onAuthStateChanged, signOut } from 'firebase/auth';
 
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(() => {
-    const stored = localStorage.getItem('user');
-    return stored ? JSON.parse(stored) : null;
-  });
+  const [user, setUser] = useState(null);
 
-  const navigate = useNavigate();
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, setUser);
+    return () => unsubscribe();
+  }, []);
 
-  const login = (username, password) => {
-    const users = JSON.parse(localStorage.getItem('users')) || [];
-    const foundUser = users.find(u => u.username === username);
-
-    if (foundUser && bcrypt.compareSync(password, foundUser.password)) {
-      setUser({ username });
-      localStorage.setItem('user', JSON.stringify({ username }));
-      navigate('/dashboard');
-    } else {
-      alert('Invalid credentials');
-    }
-  };
-
-  const signup = (username, password) => {
-    const users = JSON.parse(localStorage.getItem('users')) || [];
-    const existing = users.find(u => u.username === username);
-    if (existing) {
-      alert('User already exists');
-      return;
-    }
-    const hashed = bcrypt.hashSync(password, 10);
-    users.push({ username, password: hashed });
-    localStorage.setItem('users', JSON.stringify(users));
-    login(username, password);
-  };
-
-  const logout = () => {
-    setUser(null);
-    localStorage.removeItem('user');
-    navigate('/');
-  };
+  const logout = () => signOut(auth);
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, signup }}>
+    <AuthContext.Provider value={{ user, logout }}>
       {children}
     </AuthContext.Provider>
   );

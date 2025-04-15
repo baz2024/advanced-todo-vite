@@ -1,29 +1,40 @@
+// src/pages/Login.jsx
 import React, { useState } from 'react';
 import { Button, TextField, Container, Typography } from '@mui/material';
-import { useAuth } from '../context/AuthContext';
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
+import { signInWithEmailAndPassword, signInWithPopup } from 'firebase/auth';
+import { auth, googleProvider } from '../firebase';
 
 const Login = () => {
-  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const { login } = useAuth();
+  const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    login(username.trim(), password);
+  const handleEmailLogin = async () => {
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+      navigate('/dashboard');
+    } catch (err) {
+      alert(err.message);
+    }
+  };
+
+  const handleGoogleLogin = async () => {
+    try {
+      await signInWithPopup(auth, googleProvider);
+      navigate('/dashboard');
+    } catch (err) {
+      alert(err.message);
+    }
   };
 
   return (
-    <Container>
-      <Typography variant="h5">Login</Typography>
-      <form onSubmit={handleSubmit}>
-        <TextField label="Username" fullWidth margin="normal" onChange={e => setUsername(e.target.value)} />
-        <TextField label="Password" type="password" fullWidth margin="normal" onChange={e => setPassword(e.target.value)} />
-        <Button type="submit" variant="contained" fullWidth>Login</Button>
-        <Typography variant="body2" mt={2}>
-          No account? <Link to="/signup">Sign up</Link>
-        </Typography>
-      </form>
+    <Container maxWidth="sm" sx={{ mt: 10 }}>
+      <Typography variant="h4">Login</Typography>
+      <TextField fullWidth label="Email" onChange={e => setEmail(e.target.value)} />
+      <TextField fullWidth label="Password" type="password" sx={{ mt: 2 }} onChange={e => setPassword(e.target.value)} />
+      <Button fullWidth variant="contained" sx={{ mt: 2 }} onClick={handleEmailLogin}>Login</Button>
+      <Button fullWidth variant="outlined" sx={{ mt: 2 }} onClick={handleGoogleLogin}>Login with Google</Button>
     </Container>
   );
 };
