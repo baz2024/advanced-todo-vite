@@ -1,5 +1,5 @@
 
-# Advanced React + MUI Tutorial (Part 4: Signup & Password Encryption)
+# Advanced React + MUI Tutorial (Part 4: Fixed Signup & Password Encryption)
 
 **Author**: Dr. Basel Magableh  
 **Date**: April 2025
@@ -8,12 +8,11 @@
 
 ## Overview
 
-In this fourth part of the tutorial, we will:
+This updated tutorial improves the sign-up and login system by ensuring:
 
-- Add a **Sign Up page** to register new users.
-- Store **username and encrypted password** in `localStorage`.
-- Use **bcryptjs** for secure password hashing.
-- Validate login credentials with encrypted password.
+- Usernames and passwords are normalized.
+- Encrypted passwords are stored in localStorage using `bcryptjs`.
+- Login checks the hash correctly and allows access.
 
 ---
 
@@ -25,7 +24,7 @@ npm install bcryptjs
 
 ---
 
-## Step 2: Create Sign Up Page
+## Step 2: Fixed Signup Page
 
 ```javascript
 // pages/Signup.jsx
@@ -40,18 +39,20 @@ const Signup = () => {
   const navigate = useNavigate();
 
   const handleSignup = () => {
-    const existingUsers = JSON.parse(localStorage.getItem('users')) || [];
-    const isTaken = existingUsers.find(u => u.username === username);
+    const normalizedUsername = username.trim().toLowerCase();
+    const users = JSON.parse(localStorage.getItem('users')) || [];
 
-    if (isTaken) {
-      alert("Username already exists!");
+    const userExists = users.some(user => user.username === normalizedUsername);
+    if (userExists) {
+      alert("Username already exists.");
       return;
     }
 
-    const hashedPassword = bcrypt.hashSync(password, 10);
-    const newUsers = [...existingUsers, { username, password: hashedPassword }];
-    localStorage.setItem('users', JSON.stringify(newUsers));
-    alert("Signup successful! You can now login.");
+    const hashedPassword = bcrypt.hashSync(password.trim(), 10);
+    users.push({ username: normalizedUsername, password: hashedPassword });
+
+    localStorage.setItem('users', JSON.stringify(users));
+    alert("Signup successful. You can now log in.");
     navigate('/');
   };
 
@@ -70,7 +71,7 @@ export default Signup;
 
 ---
 
-## Step 3: Update Login Page to Check Hashed Password
+## Step 3: Fixed Login Page
 
 ```javascript
 // pages/Login.jsx
@@ -87,21 +88,22 @@ const Login = () => {
   const { login } = useAuth();
 
   const handleLogin = () => {
+    const normalizedUsername = username.trim().toLowerCase();
     const users = JSON.parse(localStorage.getItem('users')) || [];
-    const user = users.find(u => u.username === username);
+    const foundUser = users.find(user => user.username === normalizedUsername);
 
-    if (!user) {
-      alert("User not found");
+    if (!foundUser) {
+      alert("User not found.");
       return;
     }
 
-    const isMatch = bcrypt.compareSync(password, user.password);
+    const isMatch = bcrypt.compareSync(password.trim(), foundUser.password);
     if (!isMatch) {
-      alert("Incorrect password");
+      alert("Incorrect password.");
       return;
     }
 
-    login(username);
+    login(normalizedUsername);
     navigate('/dashboard');
   };
 
@@ -111,6 +113,9 @@ const Login = () => {
       <TextField fullWidth label="Username" margin="normal" onChange={e => setUsername(e.target.value)} />
       <TextField fullWidth label="Password" type="password" margin="normal" onChange={e => setPassword(e.target.value)} />
       <Button variant="contained" sx={{ mt: 2 }} onClick={handleLogin}>Login</Button>
+      <Typography sx={{ mt: 2 }}>
+        Don’t have an account? <a href="/signup">Sign up</a>
+      </Typography>
     </Container>
   );
 };
@@ -120,47 +125,43 @@ export default Login;
 
 ---
 
-## Step 4: Add Route for Signup
+## Step 4: Example localStorage Structure
 
-### App.jsx
-
-```javascript
-import Signup from './pages/Signup';
-
-<Routes>
-  <Route path="/" element={isLoggedIn ? <Navigate to="/dashboard" /> : <Login />} />
-  <Route path="/signup" element={<Signup />} />
-  <Route path="/dashboard" element={isLoggedIn ? <Dashboard /> : <Navigate to="/" />} />
-</Routes>
+```json
+[
+  {
+    "username": "basel",
+    "password": "$2a$10$Lt1FZ...encrypted..."
+  }
+]
 ```
+
+Check your browser dev tools → Application → localStorage → key `users`.
 
 ---
 
-## Step 5: Add Link to Signup Page in Login
+## Step 5: Add Signup Route
 
-### Add in Login.jsx below form:
+In `App.jsx`, update your routes:
 
 ```jsx
-<Typography sx={{ mt: 2 }}>
-  Don’t have an account? <a href="/signup">Sign up</a>
-</Typography>
+<Route path="/signup" element={<Signup />} />
 ```
 
 ---
 
 ## Summary
 
-In Part 4, we added:
+- Usernames are stored in lowercase.
+- Passwords are trimmed and hashed with bcryptjs.
+- Login works by comparing plaintext input against hashed values.
 
-- A **sign-up page** that securely stores user credentials in localStorage using `bcryptjs`.
-- Login verification using encrypted password comparison.
-- Routing to allow new user registration.
+✅ Now you can sign up, login securely, and work with authenticated sessions in memory.
 
 ---
 
-## Next Steps
+## What’s Next?
 
-- Add JWT or session-based auth for production.
-- Use Firebase or Supabase to persist user accounts.
-- Add password validation rules and feedback.
-
+- Add Firebase (see Part 5)
+- Create a user profile page
+- Support logout and session cleanup
