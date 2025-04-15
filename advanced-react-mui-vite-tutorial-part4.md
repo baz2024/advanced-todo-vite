@@ -28,51 +28,28 @@ npm install bcryptjs
 ## ✅ New `Signup.jsx`
 
 ```javascript
-// pages/Signup.jsx
 import React, { useState } from 'react';
 import { Button, TextField, Container, Typography } from '@mui/material';
-import { useNavigate } from 'react-router-dom';
-import bcrypt from 'bcryptjs';
 import { useAuth } from '../context/AuthContext';
 
 const Signup = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const navigate = useNavigate();
-  const { login } = useAuth();
+  const { signup } = useAuth();
 
-  const handleSignup = () => {
-    const normalizedUsername = username.trim().toLowerCase();
-    const trimmedPassword = password.trim();
-
-    if (!normalizedUsername || !trimmedPassword) {
-      alert("Username and password are required.");
-      return;
-    }
-
-    const users = JSON.parse(localStorage.getItem('users')) || [];
-    const userExists = users.some(user => user.username === normalizedUsername);
-
-    if (userExists) {
-      alert("Username already exists.");
-      return;
-    }
-
-    const hashedPassword = bcrypt.hashSync(trimmedPassword, 10);
-    const newUser = { username: normalizedUsername, password: hashedPassword };
-    const updatedUsers = [...users, newUser];
-
-    localStorage.setItem('users', JSON.stringify(updatedUsers));
-    login(normalizedUsername);
-    navigate('/dashboard');
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    signup(username.trim(), password);
   };
 
   return (
-    <Container maxWidth="sm" sx={{ mt: 10 }}>
-      <Typography variant="h4" gutterBottom>Sign Up</Typography>
-      <TextField fullWidth label="Username" margin="normal" onChange={e => setUsername(e.target.value)} />
-      <TextField fullWidth label="Password" type="password" margin="normal" onChange={e => setPassword(e.target.value)} />
-      <Button variant="contained" sx={{ mt: 2 }} onClick={handleSignup}>Sign Up</Button>
+    <Container>
+      <Typography variant="h5">Sign Up</Typography>
+      <form onSubmit={handleSubmit}>
+        <TextField label="Username" fullWidth margin="normal" onChange={e => setUsername(e.target.value)} />
+        <TextField label="Password" type="password" fullWidth margin="normal" onChange={e => setPassword(e.target.value)} />
+        <Button type="submit" variant="contained" fullWidth>Sign Up</Button>
+      </form>
     </Container>
   );
 };
@@ -85,48 +62,32 @@ export default Signup;
 ## ✅ Updated `Login.jsx`
 
 ```javascript
-// pages/Login.jsx
 import React, { useState } from 'react';
 import { Button, TextField, Container, Typography } from '@mui/material';
-import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import bcrypt from 'bcryptjs';
+import { Link } from 'react-router-dom';
 
 const Login = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const navigate = useNavigate();
   const { login } = useAuth();
 
-  const handleLogin = () => {
-    const normalizedUsername = username.trim().toLowerCase();
-    const users = JSON.parse(localStorage.getItem('users')) || [];
-    const foundUser = users.find(user => user.username === normalizedUsername);
-
-    if (!foundUser) {
-      alert("User not found. Try signing up.");
-      return;
-    }
-
-    const isMatch = bcrypt.compareSync(password.trim(), foundUser.password);
-    if (!isMatch) {
-      alert("Incorrect password. Please try again.");
-      return;
-    }
-
-    login(normalizedUsername);
-    navigate('/dashboard');
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    login(username.trim(), password);
   };
 
   return (
-    <Container maxWidth="sm" sx={{ mt: 10 }}>
-      <Typography variant="h4" gutterBottom>Login</Typography>
-      <TextField fullWidth label="Username" margin="normal" onChange={e => setUsername(e.target.value)} />
-      <TextField fullWidth label="Password" type="password" margin="normal" onChange={e => setPassword(e.target.value)} />
-      <Button variant="contained" sx={{ mt: 2 }} onClick={handleLogin}>Login</Button>
-      <Typography sx={{ mt: 2 }}>
-        Don’t have an account? <a href="/signup">Sign up</a>
-      </Typography>
+    <Container>
+      <Typography variant="h5">Login</Typography>
+      <form onSubmit={handleSubmit}>
+        <TextField label="Username" fullWidth margin="normal" onChange={e => setUsername(e.target.value)} />
+        <TextField label="Password" type="password" fullWidth margin="normal" onChange={e => setPassword(e.target.value)} />
+        <Button type="submit" variant="contained" fullWidth>Login</Button>
+        <Typography variant="body2" mt={2}>
+          No account? <Link to="/signup">Sign up</Link>
+        </Typography>
+      </form>
     </Container>
   );
 };
@@ -139,26 +100,55 @@ export default Login;
 ## ✅ Reminder: AuthContext (for context)
 
 ```javascript
-// context/AuthContext.jsx
-import { createContext, useContext, useState } from 'react';
+// src/context/AuthContext.jsx
+import React, { createContext, useContext, useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import bcrypt from 'bcryptjs';
 
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(localStorage.getItem('user') || '');
+  const [user, setUser] = useState(() => {
+    const stored = localStorage.getItem('user');
+    return stored ? JSON.parse(stored) : null;
+  });
 
-  const login = (username) => {
-    localStorage.setItem('user', username);
-    setUser(username);
+  const navigate = useNavigate();
+
+  const login = (username, password) => {
+    const users = JSON.parse(localStorage.getItem('users')) || [];
+    const foundUser = users.find(u => u.username === username);
+
+    if (foundUser && bcrypt.compareSync(password, foundUser.password)) {
+      setUser({ username });
+      localStorage.setItem('user', JSON.stringify({ username }));
+      navigate('/dashboard');
+    } else {
+      alert('Invalid credentials');
+    }
+  };
+
+  const signup = (username, password) => {
+    const users = JSON.parse(localStorage.getItem('users')) || [];
+    const existing = users.find(u => u.username === username);
+    if (existing) {
+      alert('User already exists');
+      return;
+    }
+    const hashed = bcrypt.hashSync(password, 10);
+    users.push({ username, password: hashed });
+    localStorage.setItem('users', JSON.stringify(users));
+    login(username, password);
   };
 
   const logout = () => {
+    setUser(null);
     localStorage.removeItem('user');
-    setUser('');
+    navigate('/');
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout }}>
+    <AuthContext.Provider value={{ user, login, logout, signup }}>
       {children}
     </AuthContext.Provider>
   );
@@ -166,7 +156,93 @@ export const AuthProvider = ({ children }) => {
 
 export const useAuth = () => useContext(AuthContext);
 ```
+### Dashboard.jsx
+```javascript
+import React, { useState } from 'react';
+import { Card, CardContent, Typography, Box, Button } from '@mui/material';
+import { DataGrid } from '@mui/x-data-grid';
+import Navbar from '../components/Navbar';
+import Sidebar from '../components/Sidebar';
+import BreadcrumbsNav from '../components/BreadcrumbsNav';
+import { useAuth } from '../context/AuthContext';
+ 
+const Dashboard = () => {
+  const [open, setOpen] = useState(false);
+  const { user } = useAuth();
+  const { logout } = useAuth();
+  const rows = [
+    { id: 1, task: 'Finish report', status: 'Done' },
+    { id: 2, task: 'Update website', status: 'Pending' },
+  ];
+  const columns = [
+    { field: 'id', headerName: 'ID', width: 70 },
+    { field: 'task', headerName: 'Task', width: 200 },
+    { field: 'status', headerName: 'Status', width: 150 },
+  ];
 
+  return (
+    <>
+      <Navbar onMenuClick={() => setOpen(true)} />
+      <Sidebar open={open} onClose={() => setOpen(false)} />
+      <Box sx={{ p: 2 }}>
+         <Typography variant="h4">Welcome, {user?.username}</Typography>
+      <Button variant="contained" color="secondary" onClick={logout}>Logout</Button>
+        <BreadcrumbsNav />
+        <Card sx={{ mb: 3 }}>
+          <CardContent>
+            <Typography variant="h5">Welcome Back!</Typography>
+            <Typography variant="body1">Here are your tasks:</Typography>
+          </CardContent>
+        </Card>
+        <DataGrid autoHeight rows={rows} columns={columns} pageSize={5} />
+      </Box>
+    </>
+  );
+};
+
+export default Dashboard;
+```
+### Main.jsx to include AuthProvider
+```javascript
+// src/main.jsx
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+import App from './App';
+import { BrowserRouter } from 'react-router-dom';
+import { AuthProvider } from './context/AuthContext';
+
+ReactDOM.createRoot(document.getElementById('root')).render(
+  <BrowserRouter>
+    <AuthProvider>
+      <App />
+    </AuthProvider>
+  </BrowserRouter>
+);
+```
+### Update App.jsx 
+```javascript 
+// src/App.jsx
+import React from 'react';
+import { Routes, Route, Navigate } from 'react-router-dom';
+import Login from './pages/Login';
+import Signup from './pages/Signup';
+import Dashboard from './pages/Dashboard';
+import { useAuth } from './context/AuthContext';
+
+const App = () => {
+  const { user } = useAuth();
+
+  return (
+    <Routes>
+      <Route path="/" element={!user ? <Login /> : <Navigate to="/dashboard" />} />
+      <Route path="/signup" element={<Signup />} />
+      <Route path="/dashboard" element={user ? <Dashboard /> : <Navigate to="/" />} />
+    </Routes>
+  );
+};
+
+export default App;
+```
 ---
 
 ## ✅ Summary
