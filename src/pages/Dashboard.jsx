@@ -1,25 +1,27 @@
-import React, { useState } from 'react';
+// pages/Dashboard.jsx
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, Typography, Box } from '@mui/material';
 import { DataGrid } from '@mui/x-data-grid';
 import Navbar from '../components/Navbar';
 import Sidebar from '../components/Sidebar';
-import BreadcrumbsNav from '../components/BreadcrumsNav';
+import BreadcrumbsNav from '../components/BreadcrumbsNav';
 
 const Dashboard = () => {
   const [open, setOpen] = useState(false);
-  const rows = [
-    { id: 1, task: 'Finish report', status: 'Done' },
-    { id: 2, task: 'Update website', status: 'Pending' },
-    { id: 3, task: 'Update website', status: 'Pending' },
-    { id: 4, task: 'Update website', status: 'Pending' },
-    { id: 5, task: 'Update website', status: 'Pending' },
-    { id: 6, task: 'Update website', status: 'Pending' },
-  ];
+  const [rows, setRows] = useState([]);
+
   const columns = [
-    { field: 'id', headerName: 'Student num', width: 70 },
-    { field: 'task', headerName: 'Task', width: 200 },
-    { field: 'status', headerName: 'Status', width: 150 },
+    { field: 'id', headerName: 'ID', width: 70 },
+    { field: 'title', headerName: 'Task', width: 250 },
+    { field: 'completed', headerName: 'Status', width: 130, valueFormatter: (params) => params.value ? 'Done' : 'Pending' },
   ];
+
+  useEffect(() => {
+    fetch('https://jsonplaceholder.typicode.com/todos?_limit=10')
+      .then(res => res.json())
+      .then(data => setRows(data))
+      .catch(error => console.error("Error loading tasks:", error));
+  }, []);
 
   return (
     <>
@@ -30,10 +32,10 @@ const Dashboard = () => {
         <Card sx={{ mb: 3 }}>
           <CardContent>
             <Typography variant="h5">Welcome Back!</Typography>
-            <Typography variant="body1">Here are your tasks:</Typography>
+            <Typography variant="body1">Here are your latest tasks from API:</Typography>
           </CardContent>
         </Card>
-        <DataGrid  rows={rows} columns={columns} pageSize={5} />
+        <DataGrid autoHeight rows={rows} columns={columns} pageSize={5} />
       </Box>
     </>
   );

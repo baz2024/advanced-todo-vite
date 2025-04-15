@@ -1,10 +1,11 @@
+// components/Navbar.jsx
 import React from 'react';
 import { AppBar, Toolbar, Typography, IconButton, Avatar, Tooltip } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
 
 const Navbar = ({ onMenuClick }) => {
   const username = localStorage.getItem('user') || 'User';
-    // Fallback to 'User' if no username is found
+  const avatarUrl = `https://i.pravatar.cc/150?u=${username}`;
 
   return (
     <AppBar position="static">
@@ -14,7 +15,7 @@ const Navbar = ({ onMenuClick }) => {
         </IconButton>
         <Typography variant="h6" sx={{ flexGrow: 1 }}>Dashboard</Typography>
         <Tooltip title={username}>
-          <Avatar>{username.charAt(0).toUpperCase()}</Avatar>
+          <Avatar src={avatarUrl} />
         </Tooltip>
       </Toolbar>
     </AppBar>
