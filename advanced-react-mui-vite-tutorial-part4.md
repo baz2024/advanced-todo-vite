@@ -25,7 +25,7 @@ npm install bcryptjs
 
 ---
 
-## ✅ Updated `Signup.jsx`
+## ✅ New `Signup.jsx`
 
 ```javascript
 // pages/Signup.jsx
